@@ -1,10 +1,16 @@
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
+from qiskit.circuit.library import PauliGate
 
 from utils.circ_gen_shortcuts import create_pauli_measurement
 
 
 class ArcCircSim:
-    def __init__(self, no_link_bits, start_zx=True, pauli_noise_list=None):
+    def __init__(
+        self,
+        no_link_bits,
+        start_zx=True,
+        pauli_noise_list=None,
+    ):
         self.no_link_bits = no_link_bits
         self.start_zx = start_zx
         self.pauli_noise_list = pauli_noise_list
@@ -95,22 +101,12 @@ class ArcCircSim:
 
     def _generate_encoding_circ(self, encoding_only=False):
         # should get n from arccirc in future
-        if encoding_only:
-            encoding_circ = QuantumCircuit(
-                QuantumRegister(self.no_link_bits, name="data_qubits")
-            )
-            mod = 1 if self.start_zx else 0
-            for i in range(self.no_link_bits):
-                if i % 2 == mod:
-                    encoding_circ.h(i)
-            encoding_circ.barrier()
-            return encoding_circ
         encoding_circ = QuantumCircuit(
             QuantumRegister(1, "ancilla"),
             QuantumRegister(self.no_link_bits, "data qubits"),
             ClassicalRegister(self.no_link_bits - 1),
         )
-        mod = 0 if self.start_zx else 1
+        mod = 1 if self.start_zx else 0
         for i in range(1, self.no_link_bits + 1):
             if i % 2 == mod:
                 encoding_circ.h(i)
@@ -118,6 +114,7 @@ class ArcCircSim:
         return encoding_circ
 
     def _generate_noise(self, noise: str = None):
+
         circ = QuantumCircuit(
             QuantumRegister(1, "ancilla"),
             QuantumRegister(self.no_link_bits, "data qubits"),
@@ -125,6 +122,8 @@ class ArcCircSim:
         )
         if noise is None:
             return circ
+
         circ.pauli(noise, range(1, len(noise) + 1))
+
         circ.barrier()
         return circ
