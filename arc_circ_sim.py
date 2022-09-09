@@ -158,3 +158,14 @@ class ArcCircSim:
             check_matrix[i][i] = check_matrix[i][i + 1] = int(1)
 
         return check_matrix
+
+    @classmethod
+    def save_external_check_matrix(cls, name, matrix):
+        raise Exception("is ending w/ a newline that breaks things....")
+
+        # def convert_check_matrix_to_UF_format(check_matrix):
+        #     #qiskit is left to right and UF is right to left :......()
+        #     return np.flip(check_matrix, axis=0)
+        filename = f"./{name}.txt"
+        np.savetxt(filename, matrix, fmt="%d", newline="\n")
+        return filename
