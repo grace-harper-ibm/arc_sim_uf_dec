@@ -1,3 +1,4 @@
+import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.circuit.library import PauliGate
 
@@ -19,6 +20,7 @@ class ArcCircSim:
             self.pauli_noise_list = [None] * no_link_bits * 2
 
         self.code_circ = self._generate_arc_code_circ()
+        self.check_matrix = self.generate_check_matrix(no_link_bits)
 
     def _generate_arc_code_circ(self):
         """Assumes ancillla/ancilla measurements and encoding are perfect"""
@@ -128,6 +130,9 @@ class ArcCircSim:
         circ.barrier()
         return circ
 
+    def save_check_matrix(self, name):
+        np.savetxt(f"./{name}.txt", self.check_matrix, fmt="%d", newline="\n")
+
     @classmethod
     def generate_all_unique_pauli_errors(cls, no_link_bits):
         def _append_error(cinput=None):
@@ -145,3 +150,20 @@ class ArcCircSim:
         for i in range(no_link_bits):
             ninput = _append_error(ninput)
         return ninput
+
+    @classmethod
+    def generate_check_matrix(cls, no_link_bits):
+        # has same structure as repetition code, just requires careful correction
+        """an actual implementation would read off CNOTS in circuit and thus circuit would be source of truth"""
+        # for round 1
+        check_matrix = np.zeros((no_link_bits - 1, no_link_bits), dtype=int)
+        for i in range(no_link_bits - 1):
+            check_matrix[i][i] = check_matrix[i][i + 1] = int(1)
+
+        return check_matrix
+
+    @classmethod
+    def save_external_check_matrix(cls, name, matrix):
+        filename = f"./{name}.txt"
+        np.savetxt(filename, matrix, fmt="%d", newline="\n")
+        return filename
