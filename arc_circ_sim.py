@@ -130,9 +130,6 @@ class ArcCircSim:
         circ.barrier()
         return circ
 
-    def save_check_matrix(self, name):
-        np.savetxt(f"./{name}.txt", self.check_matrix, fmt="%d", newline="\n")
-
     @classmethod
     def generate_all_unique_pauli_errors(cls, no_link_bits):
         def _append_error(cinput=None):
@@ -161,9 +158,3 @@ class ArcCircSim:
             check_matrix[i][i] = check_matrix[i][i + 1] = int(1)
 
         return check_matrix
-
-    @classmethod
-    def save_external_check_matrix(cls, name, matrix):
-        filename = f"./{name}.txt"
-        np.savetxt(filename, matrix, fmt="%d", newline="\n")
-        return filename
