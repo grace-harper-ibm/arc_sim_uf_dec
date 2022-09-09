@@ -127,3 +127,21 @@ class ArcCircSim:
 
         circ.barrier()
         return circ
+
+    @classmethod
+    def generate_all_unique_pauli_errors(cls, no_link_bits):
+        def _append_error(cinput=None):
+            if cinput is None:
+                return ["I", "X", "Y", "Z"]
+            ninput = []
+            for i in cinput:
+                ninput.append(i + "I")
+                ninput.append(i + "Y")
+                ninput.append(i + "X")
+                ninput.append(i + "Z")
+            return ninput
+
+        ninput = None
+        for i in range(no_link_bits):
+            ninput = _append_error(ninput)
+        return ninput
