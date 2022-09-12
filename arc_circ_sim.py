@@ -15,9 +15,9 @@ class ArcCircSim:
         self.no_link_bits = no_link_bits
         self.start_zx = start_zx
         self.qubit_ordering = (
-            ["zx", "xz"] * ((self.no_link_bits - 1) // 2) + ["zx"]
+            ["Z", "X"] * ((self.no_link_bits - 1) // 2) + ["Z"]
             if self.start_zx
-            else ["xz", "zx"] * ((self.no_link_bits - 1) // 2) + "xz"
+            else ["X", "Z"] * ((self.no_link_bits - 1) // 2) + ["X"]
         )
         self.pauli_noise_list = pauli_noise_list
         self.I = "I" * no_link_bits

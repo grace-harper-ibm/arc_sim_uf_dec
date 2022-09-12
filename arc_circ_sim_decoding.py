@@ -1,5 +1,7 @@
+import numpy as np
 from mqt.qecc import Code, UFHeuristic
 from qiskit import IBMQ, transpile
+from qiskit.quantum_info import PauliList
 
 from arc_circ_sim import ArcCircSim
 from utils.get_backend import get_backend
@@ -20,7 +22,9 @@ basic_tests = [
 
 experiments = []
 for noise in basic_tests:
-    res = [0] * 6  # [[arc, trans, job, counts, UFSyndrome, UFResults]]
+    res = [
+        0
+    ] * 9  # [[arc, trans, job, counts, UFSyndrome, UFResults], [apply correction], [corrected vs  OG]]
     res[0] = ArcCircSim(n, pauli_noise_list=noise)
     res[1] = transpile(res[0].code_circ, backend=backend)
     res[2] = backend.run(res[1])
@@ -44,8 +48,30 @@ for res in experiments:
     result = decoder.result
     res[5] = result.estimate
 
-for res in experiments:
-    print(res[0].pauli_noise_list)
-    print(list(res[3].keys())[0])
-    print(res[5])
-    print()
+    # apply results
+    circ = res[0]
+    error_matrix = np.identity((2**n, 2**n))
+    for err in circ.pauli_noise_list:
+        pauli_err = PauliList(err).to_matrix(array=True)  # numpy array
+        error_matrix = np.matmul(pauli_err, error_matrix)
+
+    qubit_ordering = circ.qubit_ordering
+    correction = np.identity((2**n, 2**n))
+
+    for quindex in len(result):
+        istring = "I" * circ.no_link_bits
+        if result[quindex] == 1:
+            corr_pauli_str = (
+                istring[:quindex] + qubit_ordering[quindex] + istring[quindex + 1 :]
+            )
+            corr_pauli = PauliList(corr_pauli_str).to_matrix(array=True)
+            correction = np.matmul(correction, corr_pauli)
+
+    final = np.matmul(correction, error_matrix)
+    res[7] = final
+
+    # apply errors/corrections together to see if we get I
+
+
+# make (xz, zx) circs and test each against all errors ; see if together they catch all errors. x
+# naive application of decoding
