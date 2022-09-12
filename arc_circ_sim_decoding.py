@@ -50,27 +50,33 @@ for res in experiments:
 
     # apply results
     circ = res[0]
-    error_matrix = np.identity((2**n, 2**n))
+    error_matrix = np.identity(2 ** (circ.no_link_bits), dtype=int)
     for err in circ.pauli_noise_list:
         pauli_err = PauliList(err).to_matrix(array=True)  # numpy array
         error_matrix = np.matmul(pauli_err, error_matrix)
 
     qubit_ordering = circ.qubit_ordering
-    correction = np.identity((2**n, 2**n))
-
-    for quindex in len(result):
+    correction = np.identity(2 ** (circ.no_link_bits), dtype=int)
+    res[6] = []
+    for quindex in range(len(result.estimate)):
         istring = "I" * circ.no_link_bits
-        if result[quindex] == 1:
+        if result.estimate[quindex] == 1:
             corr_pauli_str = (
                 istring[:quindex] + qubit_ordering[quindex] + istring[quindex + 1 :]
             )
+            res[6].append(corr_pauli_str)
             corr_pauli = PauliList(corr_pauli_str).to_matrix(array=True)
             correction = np.matmul(correction, corr_pauli)
 
+    # apply errors/corrections together to see if we get I
     final = np.matmul(correction, error_matrix)
     res[7] = final
 
-    # apply errors/corrections together to see if we get I
+    print(circ.qubit_ordering)
+    print(circ.pauli_noise_list)
+    print(res[6])
+    print(np.all(np.equal(final, np.identity(2 ** (circ.no_link_bits)))) == True)
+    print()
 
 
 # make (xz, zx) circs and test each against all errors ; see if together they catch all errors. x
