@@ -14,6 +14,11 @@ class ArcCircSim:
     ):
         self.no_link_bits = no_link_bits
         self.start_zx = start_zx
+        self.qubit_ordering = (
+            ["zx", "xz"] * ((self.no_link_bits - 1) // 2) + ["zx"]
+            if self.start_zx
+            else ["xz", "zx"] * ((self.no_link_bits - 1) // 2) + "xz"
+        )
         self.pauli_noise_list = pauli_noise_list
         self.I = "I" * no_link_bits
         if self.pauli_noise_list is None:
@@ -26,9 +31,15 @@ class ArcCircSim:
         """Assumes ancillla/ancilla measurements and encoding are perfect"""
         # TODO: make each round a seperate circuit in a list so can easily add in noise at indexes instead of
         # this forloop nightmare
-        qubits = QuantumRegister(self.no_link_bits + 1, name="qubits")
-        meas_bits = ClassicalRegister((self.no_link_bits - 1), name="measurement")
-        base_circ = QuantumCircuit(qubits, meas_bits)
+        self.qubits = QuantumRegister(self.no_link_bits + 1, name="qubits")
+        self.syn_meas_bits = ClassicalRegister(
+            (self.no_link_bits - 1), name="syndrome-measurement"
+        )
+        self.data_meas_bits = ClassicalRegister(
+            (self.no_link_bits), name="data-measurement"
+        )
+
+        base_circ = QuantumCircuit(self.qubits, self.syn_meas_bits, self.data_meas_bits)
         meas_count = 0
         round_no = 0
         base_circ.compose(
@@ -97,6 +108,11 @@ class ArcCircSim:
                 round_no += 1
 
             meas_count += 2
+
+        # measure output qubits
+        for i in range(1, self.no_link_bits + 1):
+            base_circ.measure(i, len(self.syn_meas_bits) + i - 1)
+
         full_circ = base_circ
         full_circ = self._generate_encoding_circ().compose(base_circ)
         return full_circ
@@ -107,6 +123,7 @@ class ArcCircSim:
             QuantumRegister(1, "ancilla"),
             QuantumRegister(self.no_link_bits, "data qubits"),
             ClassicalRegister(self.no_link_bits - 1),
+            ClassicalRegister(self.no_link_bits),
         )
         mod = 1 if self.start_zx else 0
         for i in range(1, self.no_link_bits + 1):
@@ -163,7 +180,7 @@ class ArcCircSim:
     def save_external_check_matrix(cls, name, matrix):
         raise Exception("is ending w/ a newline that breaks things....")
 
-        # def convert_check_matrix_to_UF_format(check_matrix):
+        #  def convert_check_matrix_to_UF_format(check_matrix):
         #     #qiskit is left to right and UF is right to left :......()
         #     return np.flip(check_matrix, axis=0)
         filename = f"./{name}.txt"
