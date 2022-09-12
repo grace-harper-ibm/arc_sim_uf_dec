@@ -6,18 +6,32 @@ from qiskit.quantum_info import PauliList
 from arc_circ_sim import ArcCircSim
 from utils.get_backend import get_backend
 
-n = 3
+n = 5
 error_list = ArcCircSim.generate_all_unique_pauli_errors(n)
 backend = get_backend()
 
-basic_tests = [
-    ["XII", "III", "III"],
-    ["ZII", "III", "III"],
-    ["IXI", "III", "III"],
-    ["IZI", "III", "III"],
-    ["IIX", "III", "III"],
-    ["IIZ", "III", "III"],
-]
+istring = "I" * n
+
+errors = []
+for i in range(n):
+    errors.append([istring[:i] + "X" + istring[i + 1 :]] + [istring] * (n - 1))
+
+    errors.append([istring[:i] + "Y" + istring[i + 1 :]] + [istring] * (n - 1))
+
+    errors.append([istring[:i] + "Z" + istring[i + 1 :]] + [istring] * (n - 1))
+
+
+# basic_tests = [
+#     ["XII", "III", "III"],
+#     ["ZII", "III", "III"],
+#     ["IXI", "III", "III"],
+#     ["IZI", "III", "III"],
+#     ["IIX", "III", "III"],
+#     ["IIZ", "III", "III"],
+# ]
+
+basic_tests = errors
+print(errors)
 
 
 experiments = []
@@ -32,9 +46,10 @@ for noise in basic_tests:
     experiments.append(res)
 
 checkm = ArcCircSim.generate_check_matrix(n)
-filepath = "/Users/graceharperibm/correcting/QEC Benchmarking/arc_circ/arccirc_3.txt"
+filepath = f"./test_{n}.txt"
+np.savetxt(filepath, checkm, fmt="%d", newline="\n")
 
-
+correct = 0
 for res in experiments:
 
     output = list(res[3].keys())[0]
@@ -75,8 +90,11 @@ for res in experiments:
     print(circ.qubit_ordering)
     print(circ.pauli_noise_list)
     print(res[6])
+    yes = np.all(np.equal(final, np.identity(2 ** (circ.no_link_bits)))) == True
+    if yes:
+        correct += 1
     print(np.all(np.equal(final, np.identity(2 ** (circ.no_link_bits)))) == True)
-    print()
+    print(correct / (len(basic_tests)))
 
 
 # make (xz, zx) circs and test each against all errors ; see if together they catch all errors. x
