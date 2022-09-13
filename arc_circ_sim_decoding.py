@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 from mqt.qecc import Code, UFHeuristic
 from qiskit import IBMQ, transpile
@@ -7,19 +9,47 @@ from arc_circ_sim import ArcCircSim
 from utils.get_backend import get_backend
 
 n = 5
+start_zx = True
+qubit_ordering = (
+    ["Z", "X"] * ((n - 1) // 2) + ["Z"]
+    if start_zx
+    else ["X", "Z"] * ((n - 1) // 2) + ["X"]
+)
+
+
 error_list = ArcCircSim.generate_all_unique_pauli_errors(n)
 backend = get_backend()
 
 istring = "I" * n
 
+ERROR_BLOCKS = [
+    "X" + "I" * (n - 2) + "X",
+    "XIX",
+]
+
+
 errors = []
-for i in range(n):
-    errors.append([istring[:i] + "X" + istring[i + 1 :]] + [istring] * (n - 1))
+for i in range(3):
 
-    errors.append([istring[:i] + "Y" + istring[i + 1 :]] + [istring] * (n - 1))
+    if qubit_ordering[i] != "Z":
+        errors.append([istring[:i] + "X" + istring[i + 1 :]] + [istring] * (n - 1))
 
-    errors.append([istring[:i] + "Z" + istring[i + 1 :]] + [istring] * (n - 1))
+    # if qubit_ordering[i] != "Y":
+    #     errors.append([istring[:i] + "Y" + istring[i + 1 :]] + [istring] * (n - 1))
 
+    if qubit_ordering[i] != "X":
+        errors.append([istring[:i] + "Z" + istring[i + 1 :]] + [istring] * (n - 1))
+
+if start_zx:
+    errors.append(["ZIZ" + "I" * (n - 3)] + [istring] * (n - 1))
+    errors.append(["Z" + "I" * (n - 2) + "Z"] + [istring] * (n - 1))
+    if len(qubit_ordering) > 3:
+        errors.append(["IZIZ" + "I" * (n - 4)] + [istring] * (n - 1))
+else:
+    errors.append(["XIX" + "I" * (n - 3)] + [istring] * (n - 1))
+    errors.append(["X" + "I" * (n - 2) + "X"] + [istring] * (n - 1))
+    if len(qubit_ordering) > 3:
+        errors.append(["IXIX" + "I" * (n - 4)] + [istring] * (n - 1))
 
 # basic_tests = [
 #     ["XII", "III", "III"],
@@ -39,7 +69,7 @@ for noise in basic_tests:
     res = [
         0
     ] * 9  # [[arc, trans, job, counts, UFSyndrome, UFResults], [apply correction], [corrected vs  OG]]
-    res[0] = ArcCircSim(n, pauli_noise_list=noise)
+    res[0] = ArcCircSim(n, pauli_noise_list=noise, start_zx=start_zx)
     res[1] = transpile(res[0].code_circ, backend=backend)
     res[2] = backend.run(res[1])
     res[3] = res[2].result().get_counts()
@@ -94,8 +124,8 @@ for res in experiments:
     if yes:
         correct += 1
     print(np.all(np.equal(final, np.identity(2 ** (circ.no_link_bits)))) == True)
-    print(correct / (len(basic_tests)))
+print(correct / (len(basic_tests)))
 
-
+print(basic_tests)
 # make (xz, zx) circs and test each against all errors ; see if together they catch all errors. x
 # naive application of decoding
