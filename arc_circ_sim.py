@@ -148,7 +148,7 @@ class ArcCircSim:
         return circ
 
     @classmethod
-    def generate_all_unique_pauli_errors(cls, no_link_bits):
+    def generate_each_single_pauli_error_one_first_round(cls, no_link_bits):
         def _append_error(cinput=None):
             if cinput is None:
                 return ["I", "X", "Y", "Z"]
